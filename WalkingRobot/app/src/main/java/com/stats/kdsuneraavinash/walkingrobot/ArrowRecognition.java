@@ -1,6 +1,6 @@
 package com.stats.kdsuneraavinash.walkingrobot;
 
-import org.opencv.core.CvType;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
@@ -13,104 +13,128 @@ import java.util.ArrayList;
 import java.util.List;
 
 class ArrowRecognition {
-    private Mat editImage;
-    private List<MatOfPoint> contours = new ArrayList<>();
-    private MatOfPoint arrowContour = new MatOfPoint();
-    private List<Point> arrowContourPoints = new ArrayList<>();
 
-    ArrowRecognition(Mat original) {
-        this.editImage = original.clone();
-    }
+    private double angle = 0.0;
+    private static final Size GAUSSIAN_BLUR_KERNEL = new Size(5, 5);
+    // private static final Mat MORPH_KERNEL = new Mat(new Size(3, 3), CvType.CV_8UC1, new Scalar(255));
 
-    void thresholdImage() {
-        Imgproc.cvtColor(this.editImage, this.editImage, Imgproc.COLOR_BGR2GRAY);
+    Mat process(Mat colorImage) {
+        Mat grayImage = new Mat();
+        Mat blurredImage = new Mat();
+        Mat threshedImage = new Mat();
+        // Mat morphedImage = new Mat();
+        Mat hierarchy = new Mat();
+        List<MatOfPoint> contours = new ArrayList<>();
+        MatOfPoint arrowContour = new MatOfPoint();
+
+        // gray-scale image
+        Imgproc.cvtColor(colorImage, grayImage, Imgproc.COLOR_BGR2GRAY);
+
         // Otsu's threshing after Gaussian filtering
-        Imgproc.GaussianBlur(this.editImage, this.editImage, new Size(5, 5), 0);
-        Imgproc.threshold(this.editImage, this.editImage, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
-    }
+        Imgproc.GaussianBlur(grayImage, blurredImage, GAUSSIAN_BLUR_KERNEL, 0);
+        Imgproc.threshold(blurredImage, threshedImage, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
 
-    void morphology() {
+        /*
+        // MORPHING IS SLOW
         // Open and close so that all small gaps are removed
-        Mat kernel = new Mat(new Size(3, 3), CvType.CV_8UC1, new Scalar(255));
-        Imgproc.morphologyEx(this.editImage, this.editImage, Imgproc.MORPH_OPEN, kernel);
-        Imgproc.morphologyEx(this.editImage, this.editImage, Imgproc.MORPH_CLOSE, kernel);
-    }
+        Imgproc.morphologyEx(threshedImage, morphedImage, Imgproc.MORPH_OPEN, MORPH_KERNEL);
+        Imgproc.morphologyEx(morphedImage, morphedImage, Imgproc.MORPH_CLOSE, MORPH_KERNEL);
+        */
 
-    MatOfPoint findContour() {
         // Find contours in image
-        Imgproc.findContours(this.editImage, this.contours, this.editImage, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
-        double maxArea = -1;
-        for (MatOfPoint contour : this.contours) {
+        Imgproc.findContours(threshedImage, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+        double maxArea = Double.NEGATIVE_INFINITY;
+        for (MatOfPoint contour : contours) {
             double area = Imgproc.contourArea(contour);
+            // Filter only the needed contour
             if (area > maxArea) {
                 maxArea = area;
-                this.arrowContour = contour;
+                arrowContour = contour;
             }
         }
-        this.arrowContourPoints = this.arrowContour.toList();
-        return this.arrowContour;
-    }
+        List<Point> arrowContourPoints = arrowContour.toList();
 
-    Mat drawContour(Mat image) {
-        ArrayList<MatOfPoint> tampContour = new ArrayList<>();
-        tampContour.add(this.arrowContour);
-        Imgproc.drawContours(image, tampContour, 0, new Scalar(0, 255, 255));
-        return image;
-    }
+        if (arrowContour.empty()) {
+            return colorImage;
+        }
 
-    Point getMinPoint() {
-        // Find bottom most point
+        // Find bottom most point and top most point
         Point minPoint = arrowContourPoints.get(0);
+        Point maxPoint = arrowContourPoints.get(0);
         for (Point point : arrowContourPoints) {
             if (point.y < minPoint.y) {
                 minPoint = point;
             }
-        }
-        return minPoint;
-    }
-
-
-    Point getMaxPoint() {
-        // Find top most point
-        Point maxPoint = arrowContourPoints.get(0);
-        for (Point point : arrowContourPoints) {
             if (point.y > maxPoint.y) {
                 maxPoint = point;
             }
         }
-        return maxPoint;
-    }
 
-    Point findFurthestPoint(Point p, Point q) {
-        // Find point farthest away from line between max nad min
-        double maxDistance = 0;
-        Point furthestPoint = p;
+        Point p = minPoint;
+        Point q = maxPoint;
+
+        // Find the furthest point from p and q by finding the point r which maximizes
+        // the area of the triangle pqr
+        double maxAreaOfTriangle = 0;
+        Point r = p;
         for (Point point : arrowContourPoints) {
-            double distance = 0.5 * Math.abs((p.x - point.x) * (q.y - p.y) - (p.x - q.x) * (point.y - p.y));
-            if (maxDistance < distance) {
-                maxDistance = distance;
-                furthestPoint = point;
+            double areaOfTriangle = 0.5 * Math.abs((p.x - point.x) * (q.y - p.y) - (p.x - q.x) * (point.y - p.y));
+            if (maxAreaOfTriangle < areaOfTriangle) {
+                maxAreaOfTriangle = areaOfTriangle;
+                r = point;
             }
         }
-        return furthestPoint;
+
+        Point[] pointsInOrder = findCorrectCombination(p, q, r, arrowContour);
+        p = pointsInOrder[0];
+        q = pointsInOrder[1];
+        r = pointsInOrder[2];
+
+        double cx = (p.x + q.x) / 2;
+        double cy = (p.y + q.y) / 2;
+        Point c = new Point(cx, cy);
+
+        if (c.x == r.x) {
+            angle = 90.0;
+        } else {
+            angle = Math.rint(Math.toDegrees(Math.atan((r.y - c.y) / (r.x - c.x))));
+        }
+
+        if (c.x < r.x){
+            if (c.y < r.y){
+                angle = -180 + angle;
+            }else{
+                angle = 180 + angle;
+            }
+        }
+
+        Imgproc.circle(colorImage, p, 5, new Scalar(255, 255, 255), 1);
+        Imgproc.circle(colorImage, q, 5, new Scalar(255, 255, 255), 1);
+        Imgproc.circle(colorImage, r, 5, new Scalar(255, 255, 255), 1);
+        Imgproc.line(colorImage, c, r, new Scalar(255, 0, 0));
+        Imgproc.circle(colorImage, r, 5, new Scalar(255, 0, 0), -1);
+        Imgproc.putText(colorImage, "" + angle, r, Core.FONT_HERSHEY_COMPLEX, 1, new Scalar(0, 255, 0));
+
+        return colorImage;
     }
 
     private int countBlackPoints(MatOfPoint2f contour, Point a) {
-        int blackPoints = 0;
-        for (int i = (int) a.x - 10; i < a.x + 10; i++) {
-            for (int j = (int) a.y - 10; j < a.y + 10; j++) {
+        int pointsInsideContour = 0;
+        int w = 5;
+        for (int i = (int) a.x - w; i < a.x + w; i++) {
+            for (int j = (int) a.y - w; j < a.y + w; j++) {
                 try {
                     if (Imgproc.pointPolygonTest(contour, new Point(i, j), false) == 1) {
-                        blackPoints++;
+                        pointsInsideContour++;
                     }
                 } catch (Exception ignored) {
                 }
             }
         }
-        return blackPoints;
+        return pointsInsideContour;
     }
 
-    Point[] findCorrectCombination(Point p, Point q, Point r) {
+    private Point[] findCorrectCombination(Point p, Point q, Point r, MatOfPoint arrowContour) {
         Point[][] combinations = {
                 {p, q, r},
                 {p, r, q},
@@ -132,5 +156,8 @@ class ArrowRecognition {
         return correctCombination;
     }
 
+    double getAngle() {
+        return angle;
+    }
 }
 
