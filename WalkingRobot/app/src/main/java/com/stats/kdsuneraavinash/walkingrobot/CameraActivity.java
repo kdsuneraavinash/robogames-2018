@@ -75,19 +75,19 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         Mat frame = inputFrame.rgba();
-        ArrowRecognition rec = new ArrowRecognition(frame.rows(), frame.cols());
-        Mat thresh = rec.thresholdImage(frame);
-        Mat morph = rec.morphology(thresh);
-        MatOfPoint contour = rec.findContour(morph);
+        ArrowRecognition rec = new ArrowRecognition(frame);
+        rec.thresholdImage();
+        rec.morphology();
+        MatOfPoint contour = rec.findContour();
         if (contour == null) {
             return frame;
         }
 
-        Point p = rec.getMinPoint(contour);
-        Point q = rec.getMaxPoint(contour);
-        Point r = rec.findFurthestPoint(contour, p, q);
+        Point p = rec.getMinPoint();
+        Point q = rec.getMaxPoint();
+        Point r = rec.findFurthestPoint(p, q);
 
-        Point[] pointsInOrder = rec.findCorrectCombination(contour, p, q, r);
+        Point[] pointsInOrder = rec.findCorrectCombination(p, q, r);
         p = pointsInOrder[0];
         q = pointsInOrder[1];
         r = pointsInOrder[2];
@@ -100,7 +100,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         Imgproc.line(frame, c, r, new Scalar(0, 0, 255));
         Imgproc.circle(frame, r, 5, new Scalar(0, 0, 255), -1);
         Imgproc.putText(frame, "" + Imgproc.contourArea(contour), r, Core.FONT_HERSHEY_COMPLEX, 1.0, new Scalar(255, 0, 0));
-        return rec.drawContour(frame, contour);
+        return rec.drawContour(frame);
     }
 }
 

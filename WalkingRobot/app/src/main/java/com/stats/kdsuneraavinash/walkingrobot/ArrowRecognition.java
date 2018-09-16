@@ -13,68 +13,55 @@ import java.util.ArrayList;
 import java.util.List;
 
 class ArrowRecognition {
-    private int n_rows;
-    private int n_cols;
+    private Mat editImage;
+    private List<MatOfPoint> contours = new ArrayList<>();
+    private MatOfPoint arrowContour = new MatOfPoint();
+    private List<Point> arrowContourPoints = new ArrayList<>();
 
-    ArrowRecognition(int n_rows, int n_cols) {
-        this.n_rows = n_rows;
-        this.n_cols = n_cols;
+    ArrowRecognition(Mat original) {
+        this.editImage = original.clone();
     }
 
-    Mat thresholdImage(Mat image) {
-        Mat greyed = createEmptyMat();
-        Imgproc.cvtColor(image, greyed, Imgproc.COLOR_BGR2GRAY);
-
-        Mat thresh = createEmptyMat();
-        Imgproc.threshold(greyed, thresh, 100, 255, 0);
-        return thresh;
+    void thresholdImage() {
+        Imgproc.cvtColor(this.editImage, this.editImage, Imgproc.COLOR_BGR2GRAY);
+        // Otsu's threshing after Gaussian filtering
+        Imgproc.GaussianBlur(this.editImage, this.editImage, new Size(5, 5), 0);
+        Imgproc.threshold(this.editImage, this.editImage, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
     }
 
-    Mat morphology(Mat thresh) {
+    void morphology() {
         // Open and close so that all small gaps are removed
         Mat kernel = new Mat(new Size(3, 3), CvType.CV_8UC1, new Scalar(255));
-        Mat opening = createEmptyMat();
-        Mat closing = createEmptyMat();
-        Imgproc.morphologyEx(thresh, opening, Imgproc.MORPH_OPEN, kernel);
-        Imgproc.morphologyEx(opening, closing, Imgproc.MORPH_CLOSE, kernel);
-        return closing;
+        Imgproc.morphologyEx(this.editImage, this.editImage, Imgproc.MORPH_OPEN, kernel);
+        Imgproc.morphologyEx(this.editImage, this.editImage, Imgproc.MORPH_CLOSE, kernel);
     }
 
-    MatOfPoint findContour(Mat image) {
+    MatOfPoint findContour() {
         // Find contours in image
-        List<MatOfPoint> contours = new ArrayList<>();
-        Imgproc.findContours(image, contours, image, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+        Imgproc.findContours(this.editImage, this.contours, this.editImage, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
         double maxArea = -1;
-        MatOfPoint maxAreaContour = null;
-        for (MatOfPoint contour : contours) {
+        for (MatOfPoint contour : this.contours) {
             double area = Imgproc.contourArea(contour);
-            if (area > 33000 || area < 10000){
-                continue;
-            }
             if (area > maxArea) {
                 maxArea = area;
-                maxAreaContour = contour;
+                this.arrowContour = contour;
             }
         }
-        return maxAreaContour;
+        this.arrowContourPoints = this.arrowContour.toList();
+        return this.arrowContour;
     }
 
-    Mat drawContour(Mat image, MatOfPoint contour) {
-        ArrayList<MatOfPoint> contours = new ArrayList<>();
-        contours.add(contour);
-        Imgproc.drawContours(image, contours, 0, new Scalar(0, 255, 255));
+    Mat drawContour(Mat image) {
+        ArrayList<MatOfPoint> tampContour = new ArrayList<>();
+        tampContour.add(this.arrowContour);
+        Imgproc.drawContours(image, tampContour, 0, new Scalar(0, 255, 255));
         return image;
     }
 
-    private Mat createEmptyMat() {
-        return Mat.zeros(this.n_rows, this.n_cols, CvType.CV_8UC1);
-    }
-
-    Point getMinPoint(MatOfPoint contour) {
+    Point getMinPoint() {
         // Find bottom most point
-        List<Point> contourPoints = contour.toList();
-        Point minPoint = contourPoints.get(0);
-        for (Point point : contourPoints) {
+        Point minPoint = arrowContourPoints.get(0);
+        for (Point point : arrowContourPoints) {
             if (point.y < minPoint.y) {
                 minPoint = point;
             }
@@ -83,11 +70,10 @@ class ArrowRecognition {
     }
 
 
-    Point getMaxPoint(MatOfPoint contour) {
+    Point getMaxPoint() {
         // Find top most point
-        List<Point> contourPoints = contour.toList();
-        Point maxPoint = contourPoints.get(0);
-        for (Point point : contourPoints) {
+        Point maxPoint = arrowContourPoints.get(0);
+        for (Point point : arrowContourPoints) {
             if (point.y > maxPoint.y) {
                 maxPoint = point;
             }
@@ -95,13 +81,11 @@ class ArrowRecognition {
         return maxPoint;
     }
 
-    Point findFurthestPoint(MatOfPoint contour, Point p, Point q) {
-        List<Point> contourPoints = contour.toList();
-
+    Point findFurthestPoint(Point p, Point q) {
         // Find point farthest away from line between max nad min
         double maxDistance = 0;
         Point furthestPoint = p;
-        for (Point point : contourPoints) {
+        for (Point point : arrowContourPoints) {
             double distance = 0.5 * Math.abs((p.x - point.x) * (q.y - p.y) - (p.x - q.x) * (point.y - p.y));
             if (maxDistance < distance) {
                 maxDistance = distance;
@@ -126,13 +110,13 @@ class ArrowRecognition {
         return blackPoints;
     }
 
-    Point[] findCorrectCombination(MatOfPoint contour, Point p, Point q, Point r) {
+    Point[] findCorrectCombination(Point p, Point q, Point r) {
         Point[][] combinations = {
                 {p, q, r},
                 {p, r, q},
                 {q, r, p},
         };
-        MatOfPoint2f contour2f = new MatOfPoint2f(contour.toArray());
+        MatOfPoint2f contour2f = new MatOfPoint2f(arrowContour.toArray());
         Point[] correctCombination = null;
         int leastBlackPoints = Integer.MAX_VALUE;
         for (Point[] combination : combinations) {
@@ -149,3 +133,4 @@ class ArrowRecognition {
     }
 
 }
+
