@@ -80,10 +80,10 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        //Mat screen = arrowRecognizer.process(inputFrame.rgba());
-        //System.out.println(arrowRecognizer.getAngle());
-        Mat screen = roadRecognizer.process(inputFrame.rgba());
-        System.out.println("y = " + roadRecognizer.getSlope() + "x + " + roadRecognizer.getIntercept());
+        Mat screen = arrowRecognizer.process(inputFrame.rgba());
+        System.out.println(arrowRecognizer.getAngle());
+//        Mat screen = roadRecognizer.process(inputFrame.rgba());
+//        System.out.println("y = " + roadRecognizer.getSlope() + "x + " + roadRecognizer.getIntercept());
         return screen;
     }
 }
