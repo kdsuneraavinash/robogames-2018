@@ -22,6 +22,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 case LoaderCallbackInterface.SUCCESS: {
                     mOpenCvCameraView.enableView();
                     arrowRecognizer = new ArrowRecognition();
+                    roadRecognizer = new RoadRecognition();
                 }
                 break;
                 default: {
@@ -32,6 +33,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         }
     };
     private ArrowRecognition arrowRecognizer;
+    private RoadRecognition roadRecognizer;
 
 
     @Override
@@ -78,9 +80,11 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        Mat frame =  arrowRecognizer.process(inputFrame.rgba());
-
-        return frame;
+        //Mat screen = arrowRecognizer.process(inputFrame.rgba());
+        //System.out.println(arrowRecognizer.getAngle());
+        Mat screen = roadRecognizer.process(inputFrame.rgba());
+        System.out.println("y = " + roadRecognizer.getSlope() + "x + " + roadRecognizer.getIntercept());
+        return screen;
     }
 }
 
