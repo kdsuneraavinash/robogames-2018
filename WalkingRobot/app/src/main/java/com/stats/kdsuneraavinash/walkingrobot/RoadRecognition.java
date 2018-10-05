@@ -1,12 +1,15 @@
 package com.stats.kdsuneraavinash.walkingrobot;
 
 import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.imgproc.Moments;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,77 +18,115 @@ class RoadRecognition {
     private static final Size GAUSSIAN_BLUR_KERNEL = new Size(5, 5);
     private double slope;
     private double intercept;
+    private int numberOfDetectedRoads = 0;
+    private double maxDetectedWidth = Double.NEGATIVE_INFINITY;
 
-    Mat process(Mat colorImage) {
-        Mat grayImage = new Mat();
-        Mat blurredImage = new Mat();
-        Mat threshedImage = new Mat();
+    private static final Scalar MAT_RED = new Scalar(198, 40, 40);
+    private static final Scalar MAT_BLUE = new Scalar(48, 63, 159);
+    private static final Scalar MAT_YELLOW = new Scalar(255, 234, 0);
+    private static final Scalar MAT_GREY = new Scalar(38, 50, 56);
+    private static final Scalar MAT_L_GREEN = new Scalar(156,204,101);
 
-        // gray-scale image
-        Imgproc.cvtColor(colorImage, grayImage, Imgproc.COLOR_BGR2GRAY);
+    private double getMidPoint(Mat camImage, int bias) {
+        // Define ROI parameters
+        Rect rectROI = new Rect(10, 2 * camImage.rows() / 3, camImage.cols() - 20, camImage.rows() / 8);
 
-        // Otsu's threshing after Gaussian filtering
-        Imgproc.GaussianBlur(grayImage, blurredImage, GAUSSIAN_BLUR_KERNEL, 0);
-        Imgproc.threshold(blurredImage, threshedImage, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
+//        // Draw a rectangle that we use as region of interest
+//        Imgproc.rectangle(camImage, new Point(rectROI.x -1, rectROI.y -1 ),
+//                new Point(rectROI.x + rectROI.width + 1, rectROI.y + rectROI.height + 1) , MAT_RED);
 
+        // Get only the region of interest
+        Mat regionOfInterest = new Mat(camImage, rectROI);
 
-        List<Point> whitePoints = new ArrayList<>();
-        for (int x = 0; x < threshedImage.size().width; x+=10) {
-            for (int y = 0; y < threshedImage.size().height; y+=10) {
-                if (threshedImage.get(y, x)[0] > 127){
-                    Imgproc.circle(colorImage, new Point(x, y), 5, new Scalar(255, 255, 255), -1);
-                    whitePoints.add(new Point(x, y));
+        // Grey-scale image
+        Mat monoColorROI = new Mat();
+        Imgproc.cvtColor(regionOfInterest, monoColorROI, Imgproc.COLOR_RGBA2GRAY);
+
+        // Put gaussian blur to image
+        Mat blurredROI = new Mat();
+        Size blurSize = new Size(9, 9);
+        Imgproc.GaussianBlur(monoColorROI, blurredROI, blurSize, 2, 2);
+
+        // Threshold image
+        Mat threshedROI = new Mat();
+        Imgproc.threshold(blurredROI, threshedROI, 0, 255, Imgproc.THRESH_BINARY | Imgproc.THRESH_OTSU);
+
+        // Apply morphological transformations
+        Mat transformedROI = new Mat();
+        Mat morphKernel = new Mat(new Size(3, 3), CvType.CV_8UC1, new Scalar(255));
+        Imgproc.morphologyEx(threshedROI, transformedROI, Imgproc.MORPH_OPEN, morphKernel);
+        Imgproc.morphologyEx(transformedROI, transformedROI, Imgproc.MORPH_CLOSE, morphKernel);
+
+        // Get contours
+        Mat notUsed = new Mat();
+        List<MatOfPoint> contours = new ArrayList<>();
+        Imgproc.findContours(transformedROI, contours, notUsed, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        // Change ROI - draw all contours and morphed
+        Imgproc.cvtColor(transformedROI, regionOfInterest, Imgproc.COLOR_GRAY2RGBA);
+        Imgproc.drawContours(regionOfInterest, contours, -1, MAT_BLUE, 2);
+
+        // Define min max using bias
+        double minMaxCx = (bias > 0 ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY);
+
+        numberOfDetectedRoads = 0;
+        maxDetectedWidth = Double.NEGATIVE_INFINITY;
+        for (MatOfPoint cont : contours) {
+            Moments mu = Imgproc.moments(cont, false);
+            if (mu.get_m00() > 300.0) {
+                Rect boundingRect = Imgproc.boundingRect(cont);
+                numberOfDetectedRoads++;
+
+                // Draw bounding rectangle
+                Imgproc.rectangle(regionOfInterest,
+                        new Point(boundingRect.x, boundingRect.y),
+                        new Point(boundingRect.x + boundingRect.width, boundingRect.y + boundingRect.height),
+                        MAT_YELLOW);
+
+                double cx;
+                if (bias > 0) {
+                    cx = boundingRect.x + boundingRect.width - 12;
+                    if (cx > minMaxCx) {
+                        minMaxCx = cx;
+                    }
+                } else {
+                    cx = boundingRect.x + 12;
+                    if (minMaxCx > cx) {
+                        minMaxCx = cx;
+                    }
                 }
+
+                if (boundingRect.width > maxDetectedWidth) {
+                    maxDetectedWidth = boundingRect.width;
+                }
+
+                // Draw identified contour
+                Imgproc.putText(regionOfInterest, "W: " + boundingRect.width, new Point(mu.get_m10() / mu.get_m00(), mu.get_m01() / mu.get_m00()),
+                        Core.FONT_HERSHEY_COMPLEX, 0.5, MAT_GREY);
             }
         }
+        if (Double.isInfinite(minMaxCx))
+            minMaxCx = regionOfInterest.cols() / 2;
 
-        // Linear Regression and prediction calculation
-        // https://enlight.nyc/projects/linear-regression/
-        double sumXPoints = 0;
-        double sumYPoints = 0;
-        double sumXYPoints = 0;
-        double sumXXPoints = 0;
-        for (int i = 0; i < whitePoints.size(); i++) {
-            sumXPoints += whitePoints.get(i).x;
-            sumYPoints += whitePoints.get(i).y;
-            sumXYPoints += whitePoints.get(i).x * whitePoints.get(i).y;
-            sumXXPoints += whitePoints.get(i).x * whitePoints.get(i).x;
+        Imgproc.circle(regionOfInterest, new Point(minMaxCx, rectROI.height / 2), 10, MAT_RED, -1);
+        return minMaxCx - regionOfInterest.cols() / 2;
+    }
+
+    Mat process(Mat colorImage) {
+        double midPoint = getMidPoint(colorImage, -1);
+        String command;
+        if (midPoint < -10) {
+            command = "LEFT WITH POWER: " + Math.round(-midPoint * 200 / colorImage.width()) + " %";
+        } else if (midPoint > 10) {
+            command = "RIGHT WITH POWER: " + Math.round(midPoint * 200 / colorImage.width()) + " %";
+        } else {
+            command = "GO FORWARD";
         }
-        double meanXPoints = sumXPoints/whitePoints.size();
-        double meanYPoints = sumYPoints/whitePoints.size();
-        double meanXYPoints = sumXYPoints/whitePoints.size();
-        double meanXXPoints = sumXXPoints/whitePoints.size();
-
-        slope = ((meanXPoints*meanYPoints) - meanXYPoints) /
-                ((meanXPoints*meanXPoints) - meanXXPoints);
-
-        intercept = meanYPoints - slope*meanXPoints;
-
-        double squaredErrorRegression = 0;
-        double squaredErrorYMean = 0;
-        for (int i = 0; i < whitePoints.size(); i++) {
-            // y values of regression line
-            double regressionY = slope*whitePoints.get(i).x + intercept;
-            // squared error of regression line
-            squaredErrorRegression += Math.pow(regressionY - whitePoints.get(i).y, 2);
-            // squared error of the y mean line - horizontal line (mean of y values)
-            squaredErrorYMean +=  Math.pow(meanYPoints - whitePoints.get(i).y, 2);
-        }
-        double rSquared = 1 -( squaredErrorRegression/squaredErrorYMean);
-
-        System.out.println(rSquared);
-
-        Imgproc.line(colorImage, new Point(0, intercept), new Point(1000,1000*slope + intercept), new Scalar(255, 0, 0), 5);
-        Imgproc.putText(colorImage, "" + rSquared, new Point(100,100*slope + intercept), Core.FONT_HERSHEY_COMPLEX, 1, new Scalar(0, 255, 0));
-
+        Imgproc.putText(colorImage, command, new Point(100, 100), Core.FONT_HERSHEY_COMPLEX, 1, MAT_YELLOW);
+        Imgproc.putText(colorImage, "DETECTED ROADS: " + numberOfDetectedRoads, new Point(100, 150),
+                Core.FONT_HERSHEY_COMPLEX, 1, MAT_L_GREEN);
+        Imgproc.putText(colorImage, "MAX W ROAD" + (maxDetectedWidth>200 ? "(CIRCLE?): ": ": ") + maxDetectedWidth, new Point(100, 200),
+                Core.FONT_HERSHEY_COMPLEX, 1, MAT_L_GREEN);
         return colorImage;
-    }
-
-    public double getSlope() {
-        return slope;
-    }
-
-    public double getIntercept() {
-        return intercept;
     }
 }
