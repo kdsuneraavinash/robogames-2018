@@ -25,7 +25,7 @@ class RoadRecognition {
     private static final Scalar MAT_L_GREEN = new Scalar(156,204,101);
     private static final Scalar MAT_GREY = new Scalar(38, 50, 56);
 
-    private double getMidPoint(Mat camImage, int bias) {
+    private double getMidPoint(Mat camImage, @SuppressWarnings("SameParameterValue") int bias) {
         // Define ROI parameters
         Rect rectROI = new Rect(10, 2 * camImage.rows() / 3, camImage.cols() - 20, camImage.rows() / 8);
 
@@ -125,7 +125,7 @@ class RoadRecognition {
         return colorImage;
     }
 
-    public boolean isCanBeCircle() {
+    boolean isCanBeCircle() {
         return canBeCircle;
     }
 }

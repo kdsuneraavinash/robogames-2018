@@ -3,9 +3,10 @@ package com.stats.kdsuneraavinash.walkingrobot;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.TextView;
+import android.widget.Button;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -13,8 +14,17 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 
+enum IdentifyMode{
+    ROAD, JUNCTION
+}
+
 public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
     private CameraBridgeViewBase mOpenCvCameraView;
+    private ArrowRecognition arrowRecognizer;
+    private RoadRecognition roadRecognizer;
+
+    private IdentifyMode mode = IdentifyMode.ROAD;
+
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -32,11 +42,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             }
         }
     };
-    private ArrowRecognition arrowRecognizer;
-    private RoadRecognition roadRecognizer;
-
-    private int mode = 0;
-
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -50,6 +55,19 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         mOpenCvCameraView = findViewById(R.id.HelloOpenCvView);
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
+
+        Button buttonRoadMode = findViewById(R.id.buttonRoadMode);
+        Button buttonJunctionMode = findViewById(R.id.buttonJunctionMode);
+        buttonJunctionMode.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mode = IdentifyMode.JUNCTION;
+            }
+        });
+        buttonRoadMode.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mode = IdentifyMode.ROAD;
+            }
+        });
     }
 
     @Override
@@ -83,13 +101,12 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         Mat screen;
-        if (mode == 0){
+        if (mode == IdentifyMode.ROAD){
             screen = roadRecognizer.process(inputFrame.rgba());
-            if (roadRecognizer.isCanBeCircle()){
-                mode = 1;
-            }
-        }else{
+        }else if (mode == IdentifyMode.JUNCTION){
             screen = arrowRecognizer.process(inputFrame.rgba());
+        }else{
+            screen = inputFrame.rgba();
         }
         return screen;
 
