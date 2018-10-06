@@ -35,6 +35,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private ArrowRecognition arrowRecognizer;
     private RoadRecognition roadRecognizer;
 
+    private int mode = 0;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -80,9 +82,18 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-//        Mat screen = arrowRecognizer.process(inputFrame.rgba());
-//        System.out.println(arrowRecognizer.getAngle());
-        return roadRecognizer.process(inputFrame.rgba());
+        Mat screen;
+        if (mode == 0){
+            screen = roadRecognizer.process(inputFrame.rgba());
+            if (roadRecognizer.isCanBeCircle()){
+                mode = 1;
+            }
+        }else{
+            screen = arrowRecognizer.process(inputFrame.rgba());
+        }
+        return screen;
+
+//        return arrowRecognizer.process(inputFrame.rgba());
     }
 }
 

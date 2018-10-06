@@ -15,25 +15,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 class RoadRecognition {
-    private static final Size GAUSSIAN_BLUR_KERNEL = new Size(5, 5);
-    private double slope;
-    private double intercept;
     private int numberOfDetectedRoads = 0;
     private double maxDetectedWidth = Double.NEGATIVE_INFINITY;
+    private boolean canBeCircle = false;
 
     private static final Scalar MAT_RED = new Scalar(198, 40, 40);
     private static final Scalar MAT_BLUE = new Scalar(48, 63, 159);
     private static final Scalar MAT_YELLOW = new Scalar(255, 234, 0);
-    private static final Scalar MAT_GREY = new Scalar(38, 50, 56);
     private static final Scalar MAT_L_GREEN = new Scalar(156,204,101);
+    private static final Scalar MAT_GREY = new Scalar(38, 50, 56);
 
     private double getMidPoint(Mat camImage, int bias) {
         // Define ROI parameters
         Rect rectROI = new Rect(10, 2 * camImage.rows() / 3, camImage.cols() - 20, camImage.rows() / 8);
-
-//        // Draw a rectangle that we use as region of interest
-//        Imgproc.rectangle(camImage, new Point(rectROI.x -1, rectROI.y -1 ),
-//                new Point(rectROI.x + rectROI.width + 1, rectROI.y + rectROI.height + 1) , MAT_RED);
 
         // Get only the region of interest
         Mat regionOfInterest = new Mat(camImage, rectROI);
@@ -125,8 +119,13 @@ class RoadRecognition {
         Imgproc.putText(colorImage, command, new Point(100, 100), Core.FONT_HERSHEY_COMPLEX, 1, MAT_YELLOW);
         Imgproc.putText(colorImage, "DETECTED ROADS: " + numberOfDetectedRoads, new Point(100, 150),
                 Core.FONT_HERSHEY_COMPLEX, 1, MAT_L_GREEN);
-        Imgproc.putText(colorImage, "MAX W ROAD" + (maxDetectedWidth>200 ? "(CIRCLE?): ": ": ") + maxDetectedWidth, new Point(100, 200),
+        Imgproc.putText(colorImage, "MAX W ROAD" + (maxDetectedWidth>300 ? "(CIRCLE?): ": ": ") + maxDetectedWidth, new Point(100, 200),
                 Core.FONT_HERSHEY_COMPLEX, 1, MAT_L_GREEN);
+        canBeCircle = maxDetectedWidth>300;
         return colorImage;
+    }
+
+    public boolean isCanBeCircle() {
+        return canBeCircle;
     }
 }
