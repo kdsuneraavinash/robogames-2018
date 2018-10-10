@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:opencv="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal">
@@ -33,14 +34,60 @@
         opencv:layout_constraintBottom_toBottomOf="parent"
         opencv:layout_constraintEnd_toEndOf="parent" />
 
-    <Button
-        android:id="@+id/buttonSettings"
-        android:layout_width="164dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+    <TextView
+        android:id="@+id/textIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="22dp"
         android:layout_marginEnd="8dp"
-        android:text="@string/settings"
+        android:layout_marginTop="8dp"
+        android:text="Indicator"
+        android:textSize="18sp"
         opencv:layout_constraintEnd_toEndOf="parent"
         opencv:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/buttonForward"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="196dp"
+        android:text="Forward"
+        opencv:layout_constraintStart_toStartOf="parent"
+        opencv:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/buttonLeft"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:text="Left"
+        opencv:layout_constraintBottom_toTopOf="@+id/buttonRoadMode"
+        opencv:layout_constraintStart_toStartOf="parent"
+        opencv:layout_constraintTop_toBottomOf="@+id/buttonForward" />
+
+    <Button
+        android:id="@+id/buttonRight"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="Right"
+        opencv:layout_constraintBottom_toTopOf="@+id/buttonJunctionMode"
+        opencv:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/buttonStop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="188dp"
+        android:text="Stop"
+        opencv:layout_constraintBottom_toTopOf="@+id/buttonRight"
+        opencv:layout_constraintEnd_toEndOf="parent"
+        opencv:layout_constraintTop_toTopOf="parent"
+        opencv:layout_constraintVertical_bias="0.444" />
 
 </android.support.constraint.ConstraintLayout>
