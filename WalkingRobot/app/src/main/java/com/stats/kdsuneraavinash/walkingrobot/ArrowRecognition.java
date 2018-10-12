@@ -16,9 +16,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 class ArrowRecognition {
-    private static final int MIN_RADIUS = 50;
-    private static final int MAX_RADIUS = 150;
-    private static final int MAX_ERROR = 25;
+    // Setting - Min Radius
+    private static final int minRadius = 200;
+    // Setting - Max Radius
+    private static final int maxRadius = 400;
+    // Setting - Max Error
+    private static final int maxError = 40;
 
     private static final Scalar MAT_YELLOW = new Scalar(255, 234, 0);
     private static final Scalar MAT_RED = new Scalar(198, 40, 40);
@@ -70,7 +73,7 @@ class ArrowRecognition {
             double error = Math.abs(radiusByLength - radiusByArea);
 
             // Filter out
-            if (approxRadius < MIN_RADIUS || approxRadius > MAX_RADIUS || error > MAX_ERROR) {
+            if (approxRadius < minRadius || approxRadius > maxRadius || error > maxError) {
                 continue;
             }
 

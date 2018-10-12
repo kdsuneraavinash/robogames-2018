@@ -5,65 +5,51 @@
 void parseData(String data);
 
 MiniKame robot;
-bool running=0;
-String input;
-
+char input;
 
 void setup() {
-    Serial.begin(9600);
-    delay(1000);
-    robot.init();
+  Serial.begin(9600);
+  robot.init();
+  input = '\n';
 }
 
 void loop() {
-    if (running){
-        Serial.println("running");
-        if (Serial.available()) {
-            while(Serial.available()) input = Serial.readStringUntil('+');
-            parseData(input);
-        } else {
-            Serial.println("Keep Moving");
-            parseData(input);
-        }
-    }
-    else{
-        Serial.println("Normal mode");
-        if (Serial.available()) {
-            while(Serial.available()) input = Serial.readStringUntil('+');
-            parseData(input);
-        }
-        else robot.home();
+    if (Serial.available()) {
+      input = Serial.readString().charAt(0) ;
+      parseData(input);
+    }else{
+      parseData(input);
     }
 }
 
-void parseData(String data){
+void parseData(char data) {
+  switch (data- '0') {
 
-    switch (data.toInt()){
+    case 1: // Up
+      Serial.println("Up");
+      robot.walk(1, 550);
+      break;
 
-        case 1: // Up
-            robot.walk(1,550);
-            running = 1;
-            break;
+    case 2: // Down
+      Serial.println("Stop");
+      break;
 
-        case 2: // Down
-            break;
+    case 3: // Left
+      Serial.println("Left");
+      robot.turnL(1, 550);
+      
+      break;
 
-        case 3: // Left
-            robot.turnL(1,550);
-            running = 1;
-            break;
+    case 4: // Right
+      Serial.println("Right");
+      robot.turnR(1, 550);
+      break;
 
-        case 4: // Right
-            robot.turnR(1,550);
-            running = 1;
-            break;
+    case 5: // STOP
+      Serial.println("Stop");
+      break;
 
-        case 5: // STOP
-            running = 0;
-            break;
-
-        default:
-            robot.home();
-            break;
-    }
+    default:
+      break;
+  }
 }

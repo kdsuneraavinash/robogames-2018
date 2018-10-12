@@ -32,7 +32,7 @@ enum IdentifyMode {
 }
 
 enum RobotCommand {
-    FORWARD, STOP, LEFT, RIGHT
+    FORWARD, STOP, LEFT, RIGHT, NONE
 }
 
 public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -43,9 +43,14 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private Arduino arduino;
     private IdentifyMode mode = IdentifyMode.ROAD;
     private TextView textStatus;
+    private TextView textReceived;
     private Button buttonIdentifyOverride;
     private Button buttonDirectionOverride;
     private Button buttonFollowRoad;
+
+    // Setting - Sleep duration (milliseconds)
+    @SuppressWarnings("FieldCanBeLocal")
+    private int waitDuration = 10;
 
     EditText dialogInput;
 
@@ -69,43 +74,48 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         }
     };
 
-    private ArduinoListener arduinoListener = new ArduinoListener() {
-        @Override
-        public void onArduinoAttached(UsbDevice device) {
-            arduino.open(device);
-            textStatus.setBackgroundColor(Color.BLUE);
-        }
+    private ArduinoListener arduinoListener;
 
-        @Override
-        public void onArduinoDetached() {
-            textStatus.setBackgroundColor(Color.RED);
+    {
+        arduinoListener = new ArduinoListener() {
+            @Override
+            public void onArduinoAttached(UsbDevice device) {
+                arduino.open(device);
+                textStatus.setBackgroundColor(Color.BLUE);
+            }
 
-        }
+            @Override
+            public void onArduinoDetached() {
+                textStatus.setBackgroundColor(Color.RED);
 
-        @Override
-        public void onArduinoMessage(final byte[] bytes) {
-            textStatus.setBackgroundColor(Color.GREEN);
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    textStatus.append(new String(bytes));
-                }
-            });
+            }
 
-        }
+            @Override
+            public void onArduinoMessage(final byte[] bytes) {
+                textStatus.setBackgroundColor(Color.GREEN);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        textReceived.setText(new String(bytes));
+                    }
+                });
 
-        @Override
-        public void onArduinoOpened() {
-            textStatus.setBackgroundColor(Color.YELLOW);
-        }
-    };
+            }
+
+            @Override
+            public void onArduinoOpened() {
+                textStatus.setBackgroundColor(Color.YELLOW);
+            }
+        };
+    }
 
     public CameraActivity() {
         commandWords = new HashMap<>();
         commandWords.put(RobotCommand.FORWARD, "1");
-        commandWords.put(RobotCommand.LEFT, "5");
-        commandWords.put(RobotCommand.RIGHT, "3");
-        commandWords.put(RobotCommand.STOP, "4");
+        commandWords.put(RobotCommand.LEFT, "3");
+        commandWords.put(RobotCommand.RIGHT, "4");
+        commandWords.put(RobotCommand.STOP, "5");
+        commandWords.put(RobotCommand.NONE, "5");
     }
 
     @Override
@@ -123,6 +133,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         textStatus = findViewById(R.id.textIndicator);
         textStatus.setBackgroundColor(Color.RED);
+
+        textReceived = findViewById(R.id.textReceived);
 
         buttonIdentifyOverride = findViewById(R.id.buttonIdentifyOverride);
         buttonDirectionOverride = findViewById(R.id.buttonDirectionOverride);
@@ -201,7 +213,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                                     public void onClick(DialogInterface dialog, int which) {
                                         switch (which) {
                                             case 0:
-                                                showInputDialogBox("Small Road Filter", String.format("%.2f", roadRecognizer.getSmallRoadFilter() ), new DialogInterface.OnClickListener() {
+                                                showInputDialogBox("Small Road Filter", String.format("%.2f", roadRecognizer.getSmallRoadFilter()), new DialogInterface.OnClickListener() {
                                                     @Override
                                                     public void onClick(DialogInterface dialog, int which) {
                                                         try {
@@ -212,7 +224,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                                                 });
                                                 break;
                                             case 1:
-                                                showInputDialogBox("Max deviation in Center", String.format("%d", roadRecognizer.getCenterMaxDeviation() ), new DialogInterface.OnClickListener() {
+                                                showInputDialogBox("Max deviation in Center", String.format("%d", roadRecognizer.getCenterMaxDeviation()), new DialogInterface.OnClickListener() {
                                                     @Override
                                                     public void onClick(DialogInterface dialog, int which) {
                                                         try {
@@ -240,7 +252,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     private void sendArduinoString(final String message) {
-        arduino.send(message.getBytes());
+        System.out.println("Sent: " + message);
+        arduino.send((message).getBytes());
         this.runOnUiThread(new Runnable() {
             public void run() {
                 textStatus.setText(String.format("Sent: %s", message));
@@ -308,7 +321,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     @Override
-    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame)  {
         Mat screen;
         if (mode == IdentifyMode.ROAD) {
             screen = roadRecognizer.process(inputFrame.rgba());
@@ -316,13 +329,24 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             screen = arrowRecognizer.process(inputFrame.rgba());
         } else if (mode == IdentifyMode.FOLLOW_ROAD) {
             screen = roadRecognizer.process(inputFrame.rgba());
-            double deviation = roadRecognizer.getMidPointDeviation();
-            if (deviation > 40) {
-                sendArduinoString(commandWords.get(RobotCommand.RIGHT));
-            } else if (deviation < -40) {
-                sendArduinoString(commandWords.get(RobotCommand.LEFT));
-            } else {
-                sendArduinoString(commandWords.get(RobotCommand.FORWARD));
+            if (roadRecognizer.isCanBeCircle()){
+                mode = IdentifyMode.JUNCTION;
+            }else{
+                RobotCommand command;
+                double deviation = roadRecognizer.getMidPointDeviation();
+                if (deviation > roadRecognizer.getCenterMaxDeviation()) {
+                    command = RobotCommand.RIGHT;
+                } else if (deviation < -roadRecognizer.getCenterMaxDeviation()) {
+                    command = RobotCommand.LEFT;
+                } else {
+                    command = RobotCommand.FORWARD;
+                }
+                sendArduinoString(commandWords.get(command));
+                try {
+                    Thread.sleep(waitDuration);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         } else {
             screen = inputFrame.rgba();

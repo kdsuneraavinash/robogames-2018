@@ -17,6 +17,7 @@ import java.util.List;
 class RoadRecognition {
     private int numberOfDetectedRoads = 0;
     private double maxWidthOfRoads = Double.NEGATIVE_INFINITY;
+    private boolean isCompletelyDeviated = false;
 
     private static final Scalar MAT_RED = new Scalar(198, 40, 40);
     private static final Scalar MAT_BLUE = new Scalar(48, 63, 159);
@@ -26,10 +27,17 @@ class RoadRecognition {
 
     private Point previouslyIdentifiedPoint = new Point(0, 0);
 
+    // Setting - Roads which are thinner than this will be neglected
     private double smallRoadFilter = 600.0;
+    // Setting - Forward will flip to Right or Left after this much deviation
+    private int centerMaxDeviation = 100;
 
     private double deviation = 0;
-    private int centerMaxDeviation = 40;
+    private boolean canBeCircle = false;
+
+    boolean isCanBeCircle() {
+        return canBeCircle;
+    }
 
     double getMidPointDeviation() {
         return deviation;
@@ -53,7 +61,7 @@ class RoadRecognition {
 
     private double getMidPoint(Mat camImage) {
         // Define ROI parameters
-        Rect rectROI = new Rect(2 * camImage.cols() / 3, 10, camImage.cols() / 8, camImage.rows() - 20);
+        Rect rectROI = new Rect(camImage.cols() / 3, 10, camImage.cols() / 6, camImage.rows() - 20);
 
         // Get only the region of interest
         Mat regionOfInterest = new Mat(camImage, rectROI);
@@ -119,6 +127,7 @@ class RoadRecognition {
                 if (boundingRect.height > maxWidthOfRoads) {
                     //noinspection SuspiciousNameCombination
                     maxWidthOfRoads = boundingRect.height;
+                    isCompletelyDeviated = Math.abs((2*boundingRect.y + boundingRect.height) / 2 - regionOfInterest.rows()/2) > 100;
                 }
             }
         }
@@ -134,20 +143,25 @@ class RoadRecognition {
     }
 
     Mat process(Mat colorImage) {
+        canBeCircle = false;
         deviation = getMidPoint(colorImage);
         String command;
         if (deviation < -centerMaxDeviation) {
-            command = "LEFT WITH POWER: " + Math.round(-deviation * 200 / colorImage.width()) + " %";
+            command = "LEFT: " + Math.round(-deviation * 200 / colorImage.width()) + " %";
         } else if (deviation > centerMaxDeviation) {
-            command = "RIGHT WITH POWER: " + Math.round(deviation * 200 / colorImage.width()) + " %";
+            command = "RIGHT: " + Math.round(deviation * 200 / colorImage.width()) + " %";
         } else {
-            command = "GO FORWARD";
+            command = "FORWARD";
         }
-        Imgproc.putText(colorImage, command, new Point(100, 100), Core.FONT_HERSHEY_COMPLEX, 1, MAT_YELLOW);
-        Imgproc.putText(colorImage, "DETECTED ROADS: " + numberOfDetectedRoads, new Point(100, 150),
+        Imgproc.putText(colorImage, command, new Point(100, 100), Core.FONT_HERSHEY_COMPLEX, 2, MAT_YELLOW, 4);
+        Imgproc.putText(colorImage, "DETECTED ROADS=: " + numberOfDetectedRoads, new Point(100, 150),
                 Core.FONT_HERSHEY_COMPLEX, 1, MAT_L_GREEN);
-        Imgproc.putText(colorImage, "MAX W ROAD" + (maxWidthOfRoads > 300 ? "(CIRCLE?): " : ": ") + maxWidthOfRoads, new Point(100, 200),
+        Imgproc.putText(colorImage, "MAX W ROAD: " + maxWidthOfRoads, new Point(100, 200),
                 Core.FONT_HERSHEY_COMPLEX, 1, MAT_L_GREEN);
+        if (maxWidthOfRoads > 900 && !isCompletelyDeviated) {
+            canBeCircle = true;
+            Imgproc.putText(colorImage, "CIRCLE", new Point(100, 250), Core.FONT_HERSHEY_COMPLEX, 1.5, MAT_YELLOW, 4);
+        }
         return colorImage;
     }
 }
