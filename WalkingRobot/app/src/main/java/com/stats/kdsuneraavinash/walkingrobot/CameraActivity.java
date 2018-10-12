@@ -1,14 +1,19 @@
 package com.stats.kdsuneraavinash.walkingrobot;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -17,11 +22,17 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 
+import java.util.HashMap;
+
 import me.aflak.arduino.Arduino;
 import me.aflak.arduino.ArduinoListener;
 
 enum IdentifyMode {
-    ROAD, JUNCTION
+    ROAD, JUNCTION, FOLLOW_ROAD
+}
+
+enum RobotCommand {
+    FORWARD, STOP, LEFT, RIGHT
 }
 
 public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -29,9 +40,16 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private ArrowRecognition arrowRecognizer;
     private RoadRecognition roadRecognizer;
 
-    Arduino arduino;
+    private Arduino arduino;
     private IdentifyMode mode = IdentifyMode.ROAD;
     private TextView textStatus;
+    private Button buttonIdentifyOverride;
+    private Button buttonDirectionOverride;
+    private Button buttonFollowRoad;
+
+    EditText dialogInput;
+
+    private HashMap<RobotCommand, String> commandWords;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -48,20 +66,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 }
                 break;
             }
-        }
-    };
-
-    private View.OnClickListener buttonRoadModeOnClick = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            mode = IdentifyMode.ROAD;
-        }
-    };
-
-    private View.OnClickListener buttonJunctionModeOnClick = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            mode = IdentifyMode.JUNCTION;
         }
     };
 
@@ -96,6 +100,14 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         }
     };
 
+    public CameraActivity() {
+        commandWords = new HashMap<>();
+        commandWords.put(RobotCommand.FORWARD, "1");
+        commandWords.put(RobotCommand.LEFT, "5");
+        commandWords.put(RobotCommand.RIGHT, "3");
+        commandWords.put(RobotCommand.STOP, "4");
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -110,38 +122,153 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         mOpenCvCameraView.setCvCameraViewListener(this);
 
         textStatus = findViewById(R.id.textIndicator);
+        textStatus.setBackgroundColor(Color.RED);
 
-        Button buttonRoadMode = findViewById(R.id.buttonRoadMode);
-        Button buttonJunctionMode = findViewById(R.id.buttonJunctionMode);
-        buttonJunctionMode.setOnClickListener(buttonJunctionModeOnClick);
-        buttonRoadMode.setOnClickListener(buttonRoadModeOnClick);
+        buttonIdentifyOverride = findViewById(R.id.buttonIdentifyOverride);
+        buttonDirectionOverride = findViewById(R.id.buttonDirectionOverride);
+        buttonFollowRoad = findViewById(R.id.buttonFollowRoad);
+        clearButtonColors();
 
-        findViewById(R.id.buttonForward).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                arduino.send("1".getBytes());
-            }
-        });
-        findViewById(R.id.buttonStop).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                arduino.send("5".getBytes());
-            }
-        });
-        findViewById(R.id.buttonLeft).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                arduino.send("3".getBytes());
-            }
-        });
-        findViewById(R.id.buttonRight).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                arduino.send("4".getBytes());
-            }
-        });
+        buttonIdentifyOverride
+                .setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(CameraActivity.this);
+                        builder.setTitle("Manually Override Identifying")
+                                .setItems(new String[]{"Identify Road", "Identify Junction"}, new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        clearButtonColors();
+                                        findViewById(R.id.buttonIdentifyOverride).setBackgroundColor(Color.YELLOW);
+                                        if (which == 0) {
+                                            mode = IdentifyMode.ROAD;
+                                        } else {
+                                            mode = IdentifyMode.JUNCTION;
+                                        }
+                                    }
+                                }).show();
+                    }
+                });
+
+
+        buttonDirectionOverride
+                .setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(CameraActivity.this);
+                        builder.setTitle("Manually Override Direction")
+                                .setItems(new String[]{"Forward", "Left", "Right", "Stop"}, new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        clearButtonColors();
+                                        findViewById(R.id.buttonDirectionOverride).setBackgroundColor(Color.YELLOW);
+                                        switch (which) {
+                                            case 0:
+                                                sendArduinoString(commandWords.get(RobotCommand.FORWARD));
+                                                break;
+                                            case 1:
+                                                sendArduinoString(commandWords.get(RobotCommand.LEFT));
+                                                break;
+                                            case 2:
+                                                sendArduinoString(commandWords.get(RobotCommand.RIGHT));
+                                                break;
+                                            default:
+                                                sendArduinoString(commandWords.get(RobotCommand.STOP));
+                                                break;
+                                        }
+                                    }
+                                }).show();
+                    }
+                });
+
+
+        buttonFollowRoad
+                .setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        clearButtonColors();
+                        findViewById(R.id.buttonFollowRoad).setBackgroundColor(Color.YELLOW);
+                        mode = IdentifyMode.FOLLOW_ROAD;
+                    }
+                });
+
+        findViewById(R.id.buttonSettings)
+                .setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(CameraActivity.this);
+                        builder.setTitle("Adjust Values")
+                                .setItems(new String[]{"Small Road Filter", "Max deviation in Center"}, new DialogInterface.OnClickListener() {
+                                    @SuppressLint("DefaultLocale")
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        switch (which) {
+                                            case 0:
+                                                showInputDialogBox("Small Road Filter", String.format("%.2f", roadRecognizer.getSmallRoadFilter() ), new DialogInterface.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(DialogInterface dialog, int which) {
+                                                        try {
+                                                            roadRecognizer.setSmallRoadFilter(Double.parseDouble(dialogInput.getText().toString()));
+                                                        } catch (Exception ignored) {
+                                                        }
+                                                    }
+                                                });
+                                                break;
+                                            case 1:
+                                                showInputDialogBox("Max deviation in Center", String.format("%d", roadRecognizer.getCenterMaxDeviation() ), new DialogInterface.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(DialogInterface dialog, int which) {
+                                                        try {
+                                                            roadRecognizer.setCenterMaxDeviation(Integer.parseInt(dialogInput.getText().toString()));
+                                                        } catch (Exception ignored) {
+                                                        }
+                                                    }
+                                                });
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                    }
+                                }).show();
+                    }
+                });
 
         arduino = new Arduino(this);
+    }
+
+    private void clearButtonColors() {
+        buttonIdentifyOverride.setBackgroundColor(Color.WHITE);
+        buttonDirectionOverride.setBackgroundColor(Color.WHITE);
+        buttonFollowRoad.setBackgroundColor(Color.WHITE);
+    }
+
+    private void sendArduinoString(final String message) {
+        arduino.send(message.getBytes());
+        this.runOnUiThread(new Runnable() {
+            public void run() {
+                textStatus.setText(String.format("Sent: %s", message));
+            }
+        });
+    }
+
+    private void showInputDialogBox(String title, String defaultText, DialogInterface.OnClickListener listener) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(title);
+
+        // Set up the input
+        dialogInput = new EditText(this);
+        // Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
+        dialogInput.setInputType(InputType.TYPE_CLASS_TEXT);
+        dialogInput.setHint(defaultText);
+        builder.setView(dialogInput);
+
+        // Set up the buttons
+        builder.setPositiveButton("OK", listener);
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
     }
 
     @Override
@@ -187,6 +314,16 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             screen = roadRecognizer.process(inputFrame.rgba());
         } else if (mode == IdentifyMode.JUNCTION) {
             screen = arrowRecognizer.process(inputFrame.rgba());
+        } else if (mode == IdentifyMode.FOLLOW_ROAD) {
+            screen = roadRecognizer.process(inputFrame.rgba());
+            double deviation = roadRecognizer.getMidPointDeviation();
+            if (deviation > 40) {
+                sendArduinoString(commandWords.get(RobotCommand.RIGHT));
+            } else if (deviation < -40) {
+                sendArduinoString(commandWords.get(RobotCommand.LEFT));
+            } else {
+                sendArduinoString(commandWords.get(RobotCommand.FORWARD));
+            }
         } else {
             screen = inputFrame.rgba();
         }

@@ -36,7 +36,7 @@ class ArrowRecognition {
 
         // Threshold image
         Mat threshedImage = new Mat();
-        Imgproc.threshold(blurredImage, threshedImage, 0, 255, Imgproc.THRESH_BINARY | Imgproc.THRESH_OTSU);
+        Imgproc.threshold(blurredImage, threshedImage, 0, 255, Imgproc.THRESH_OTSU);
 
         // Apply morphological transformations
         Mat transformedImage = new Mat();

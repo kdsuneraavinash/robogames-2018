@@ -16,18 +16,44 @@ import java.util.List;
 
 class RoadRecognition {
     private int numberOfDetectedRoads = 0;
-    private double maxDetectedWidth = Double.NEGATIVE_INFINITY;
-    private boolean canBeCircle = false;
+    private double maxWidthOfRoads = Double.NEGATIVE_INFINITY;
 
     private static final Scalar MAT_RED = new Scalar(198, 40, 40);
     private static final Scalar MAT_BLUE = new Scalar(48, 63, 159);
     private static final Scalar MAT_YELLOW = new Scalar(255, 234, 0);
-    private static final Scalar MAT_L_GREEN = new Scalar(156,204,101);
+    private static final Scalar MAT_L_GREEN = new Scalar(156, 204, 101);
     private static final Scalar MAT_GREY = new Scalar(38, 50, 56);
 
-    private double getMidPoint(Mat camImage, @SuppressWarnings("SameParameterValue") int bias) {
+    private Point previouslyIdentifiedPoint = new Point(0, 0);
+
+    private double smallRoadFilter = 600.0;
+
+    private double deviation = 0;
+    private int centerMaxDeviation = 40;
+
+    double getMidPointDeviation() {
+        return deviation;
+    }
+
+    double getSmallRoadFilter() {
+        return smallRoadFilter;
+    }
+
+    int getCenterMaxDeviation() {
+        return centerMaxDeviation;
+    }
+
+    void setCenterMaxDeviation(int centerMaxDeviation) {
+        this.centerMaxDeviation = centerMaxDeviation;
+    }
+
+    void setSmallRoadFilter(double smallRoadFilter) {
+        this.smallRoadFilter = smallRoadFilter;
+    }
+
+    private double getMidPoint(Mat camImage) {
         // Define ROI parameters
-        Rect rectROI = new Rect(10, 2 * camImage.rows() / 3, camImage.cols() - 20, camImage.rows() / 8);
+        Rect rectROI = new Rect(2 * camImage.cols() / 3, 10, camImage.cols() / 8, camImage.rows() - 20);
 
         // Get only the region of interest
         Mat regionOfInterest = new Mat(camImage, rectROI);
@@ -43,7 +69,7 @@ class RoadRecognition {
 
         // Threshold image
         Mat threshedROI = new Mat();
-        Imgproc.threshold(blurredROI, threshedROI, 0, 255, Imgproc.THRESH_BINARY | Imgproc.THRESH_OTSU);
+        Imgproc.threshold(blurredROI, threshedROI, 0, 255, Imgproc.THRESH_OTSU);
 
         // Apply morphological transformations
         Mat transformedROI = new Mat();
@@ -61,13 +87,15 @@ class RoadRecognition {
         Imgproc.drawContours(regionOfInterest, contours, -1, MAT_BLUE, 2);
 
         // Define min max using bias
-        double minMaxCx = (bias > 0 ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY);
+        // double minMaxCy = (bias > 0 ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY);
+        Point bestMidPoint = new Point(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY);
 
         numberOfDetectedRoads = 0;
-        maxDetectedWidth = Double.NEGATIVE_INFINITY;
+        maxWidthOfRoads = Double.NEGATIVE_INFINITY;
+        double smallestError = Double.POSITIVE_INFINITY;
         for (MatOfPoint cont : contours) {
             Moments mu = Imgproc.moments(cont, false);
-            if (mu.get_m00() > 300.0) {
+            if (mu.get_m00() > smallRoadFilter) {
                 Rect boundingRect = Imgproc.boundingRect(cont);
                 numberOfDetectedRoads++;
 
@@ -77,55 +105,49 @@ class RoadRecognition {
                         new Point(boundingRect.x + boundingRect.width, boundingRect.y + boundingRect.height),
                         MAT_YELLOW);
 
-                double cx;
-                if (bias > 0) {
-                    cx = boundingRect.x + boundingRect.width - 12;
-                    if (cx > minMaxCx) {
-                        minMaxCx = cx;
-                    }
-                } else {
-                    cx = boundingRect.x + 12;
-                    if (minMaxCx > cx) {
-                        minMaxCx = cx;
-                    }
-                }
+                Point point = new Point(mu.get_m10() / mu.get_m00(), mu.get_m01() / mu.get_m00());
 
-                if (boundingRect.width > maxDetectedWidth) {
-                    maxDetectedWidth = boundingRect.width;
-                }
-
+                double error = Math.abs(previouslyIdentifiedPoint.y - point.y);
                 // Draw identified contour
-                Imgproc.putText(regionOfInterest, "W: " + boundingRect.width, new Point(mu.get_m10() / mu.get_m00(), mu.get_m01() / mu.get_m00()),
+                Imgproc.putText(regionOfInterest, "E: " + Math.round(error), point,
                         Core.FONT_HERSHEY_COMPLEX, 0.5, MAT_GREY);
+                if (error < smallestError) {
+                    bestMidPoint = point;
+                    smallestError = error;
+                }
+
+                if (boundingRect.height > maxWidthOfRoads) {
+                    //noinspection SuspiciousNameCombination
+                    maxWidthOfRoads = boundingRect.height;
+                }
             }
         }
-        if (Double.isInfinite(minMaxCx))
-            minMaxCx = regionOfInterest.cols() / 2;
 
-        Imgproc.circle(regionOfInterest, new Point(minMaxCx, rectROI.height / 2), 10, MAT_RED, -1);
-        return minMaxCx - regionOfInterest.cols() / 2;
+        if (Double.isInfinite(bestMidPoint.y)) {
+            bestMidPoint = new Point(rectROI.width / 2, rectROI.height / 2);
+        }
+
+        Imgproc.circle(regionOfInterest, bestMidPoint, 10, MAT_RED, -1);
+
+        previouslyIdentifiedPoint = bestMidPoint;
+        return regionOfInterest.rows() / 2 - bestMidPoint.y;
     }
 
     Mat process(Mat colorImage) {
-        double midPoint = getMidPoint(colorImage, -1);
+        deviation = getMidPoint(colorImage);
         String command;
-        if (midPoint < -10) {
-            command = "LEFT WITH POWER: " + Math.round(-midPoint * 200 / colorImage.width()) + " %";
-        } else if (midPoint > 10) {
-            command = "RIGHT WITH POWER: " + Math.round(midPoint * 200 / colorImage.width()) + " %";
+        if (deviation < -centerMaxDeviation) {
+            command = "LEFT WITH POWER: " + Math.round(-deviation * 200 / colorImage.width()) + " %";
+        } else if (deviation > centerMaxDeviation) {
+            command = "RIGHT WITH POWER: " + Math.round(deviation * 200 / colorImage.width()) + " %";
         } else {
             command = "GO FORWARD";
         }
         Imgproc.putText(colorImage, command, new Point(100, 100), Core.FONT_HERSHEY_COMPLEX, 1, MAT_YELLOW);
         Imgproc.putText(colorImage, "DETECTED ROADS: " + numberOfDetectedRoads, new Point(100, 150),
                 Core.FONT_HERSHEY_COMPLEX, 1, MAT_L_GREEN);
-        Imgproc.putText(colorImage, "MAX W ROAD" + (maxDetectedWidth>300 ? "(CIRCLE?): ": ": ") + maxDetectedWidth, new Point(100, 200),
+        Imgproc.putText(colorImage, "MAX W ROAD" + (maxWidthOfRoads > 300 ? "(CIRCLE?): " : ": ") + maxWidthOfRoads, new Point(100, 200),
                 Core.FONT_HERSHEY_COMPLEX, 1, MAT_L_GREEN);
-        canBeCircle = maxDetectedWidth>300;
         return colorImage;
-    }
-
-    boolean isCanBeCircle() {
-        return canBeCircle;
     }
 }
