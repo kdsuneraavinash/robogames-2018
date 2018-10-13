@@ -50,7 +50,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     // Setting - Sleep duration (milliseconds)
     @SuppressWarnings("FieldCanBeLocal")
-    private int waitDuration = 10;
+    private int waitDuration = 100;
 
     EditText dialogInput;
 
@@ -209,7 +209,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                     public void onClick(View v) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(CameraActivity.this);
                         builder.setTitle("Adjust Values")
-                                .setItems(new String[]{"Small Road Filter", "Max deviation in Center"}, new DialogInterface.OnClickListener() {
+                                .setItems(new String[]{"Small Road Filter", "Max deviation in Center", "Time Delay"}, new DialogInterface.OnClickListener() {
                                     @SuppressLint("DefaultLocale")
                                     public void onClick(DialogInterface dialog, int which) {
                                         switch (which) {
@@ -230,6 +230,17 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                                                     public void onClick(DialogInterface dialog, int which) {
                                                         try {
                                                             roadRecognizer.setCenterMaxDeviation(Integer.parseInt(dialogInput.getText().toString()));
+                                                        } catch (Exception ignored) {
+                                                        }
+                                                    }
+                                                });
+                                                break;
+                                            case 2:
+                                                showInputDialogBox("Time Delay", String.format("%d", waitDuration), new DialogInterface.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(DialogInterface dialog, int which) {
+                                                        try {
+                                                            waitDuration = Integer.parseInt(dialogInput.getText().toString());
                                                         } catch (Exception ignored) {
                                                         }
                                                     }
