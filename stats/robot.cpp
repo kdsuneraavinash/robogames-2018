@@ -15,14 +15,24 @@ void Robot::init(){
     // Trim values for zero position calibration.
     // Error value for every servo.
     // Trim Error = Real turning - Angle given
+//    trim[0] = -65;
+//    trim[1] = 15;
+//    trim[2] = -55;
+//    trim[3] = -60; // Changed
+//    trim[4] = 50;
+//    trim[5] = -65;
+//    trim[6] = -65;
+//    trim[7] = -60;
+
     trim[0] = -50;
     trim[1] = -10;
-    trim[2] = -55;
-    trim[3] = -60; // Changed
+    trim[2] = -45;//55
+    trim[3] = -70; // Changed
     trim[4] = 20;
     trim[5] = -40;
-    trim[6] = -65;
-    trim[7] = -60;
+    trim[6] = -70;
+    trim[7] = -40;
+    
     // Set reverse movement to false -  forward setting
     for (int i=0; i<8; i++) reverse[i] = false;
 
@@ -37,14 +47,14 @@ void Robot::init(){
 
 void Robot::turnR(float steps, int T=600){
     // Adjust for Right ----------------
-    int x_amp = 15;
-    int z_amp = 35;
+    int x_amp = 13;
+    int z_amp = 10;
     int ap = 15;
-    int hi = 23;
+    int hi = 15;
     // ---------------------------------
     int period[] = {T, T, T, T, T, T, T, T};
     int amplitude[] = {x_amp,x_amp,z_amp,z_amp,x_amp,x_amp,z_amp,z_amp};
-    int offset[] = {90+ap,90-ap,90-hi,90+hi,90-ap,90+ap,90+hi-10,90-hi};
+    int offset[] = {90+ap,90-ap,90-hi,90+hi,90-ap,90+ap,90+hi,90-hi};
     int phase[] = {0,180,90,90,180,0,90,90};
 
     execute(steps, period, amplitude, offset, phase);
@@ -52,14 +62,14 @@ void Robot::turnR(float steps, int T=600){
 
 void Robot::turnL(float steps, int T=600){
     // Adjust for Right ----------------
-    int x_amp = 15;
-    int z_amp = 15;
+    int x_amp = 13;
+    int z_amp = 10;
     int ap = 15;
-    int hi = 23;
+    int hi = 15;
     // ---------------------------------
     int period[] = {T, T, T, T, T, T, T, T};
     int amplitude[] = {x_amp,x_amp,z_amp,z_amp,x_amp,x_amp,z_amp,z_amp};
-    int offset[] = {90+ap,90-ap,90-hi,90+hi,90-ap,90+ap,90+hi,90-hi};
+    int offset[] = {90+ap,90-ap-20,90-hi-5,90+hi,90-ap,90+ap,90+hi,90-hi};
     int phase[] = {180,0,90,90,0,180,90,90};
 
     execute(steps, period, amplitude, offset, phase);
@@ -87,8 +97,8 @@ void Robot::moonwalkL(float steps, int T=5000){
 
 void Robot::walk(float steps, int T=5000){
     // Adjust for Right ----------------
-    int x_amp = 15;
-    int z_amp = 20;
+    int x_amp = 10;
+    int z_amp = 23;
     int ap = 20;
     int hi = -5;
     int front_x = 12;
@@ -155,8 +165,8 @@ void Robot::jump(){
 
 void Robot::pushUp(float steps, int T=600){
     int z_amp = 40;
-    int x_amp = 65;
-    int hi = 30;
+    int x_amp = 20;
+    int hi = 10;
     int period[] = {T, T, T, T, T, T, T, T};
     int amplitude[] = {0,0,z_amp,z_amp,0,0,0,0};
     int offset[] = {90,90,90-hi,90+hi,90-x_amp,90+x_amp,90+hi,90-hi};
