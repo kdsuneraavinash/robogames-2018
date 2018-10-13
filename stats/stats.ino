@@ -1,10 +1,10 @@
 #include <Arduino.h>
 #include <Servo.h>
-#include "minikame.h"
+#include "robot.h"
 
 void parseData(String data);
 
-MiniKame robot;
+Robot robot;
 char input;
 
 void setup() {
@@ -27,7 +27,7 @@ void parseData(char data) {
 
     case 1: // Up
       Serial.println("Up");
-      robot.walk(1, 550);
+      robot.walk(1, 1000);
       break;
 
     case 2: // Down
@@ -46,6 +46,7 @@ void parseData(char data) {
       break;
 
     case 5: // STOP
+      robot.home();
       Serial.println("Stop");
       break;
 

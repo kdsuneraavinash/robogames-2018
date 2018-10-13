@@ -1,29 +1,28 @@
-#include "minikame.h"
+#include "robot.h"
 
 
-void MiniKame::init(){
+void Robot::init(){
     // Map between servos and board pins
-    board_pins[0] = 2; // Servo S0 - X
-    board_pins[1] = 5; // Servo S1 - X
-    board_pins[2] = 9; // Servo S2 - Z
-    board_pins[3] = 7; // Servo S3 - Z
-    board_pins[4] = 8; // Servo S4 - X
-    board_pins[5] = 6; // Servo S5 - X
-    board_pins[6] = 3; // Servo S6 - Z
-    board_pins[7] = 4; // Servo S7 - Z
+    board_pins[0] = 9; // Servo S0 - X ---- 9
+    board_pins[1] = 11; // Servo S1 - X ---- 2
+    board_pins[2] = 8; // Servo S2 - Z ----- 8
+    board_pins[3] = 3; // Servo S3 - Z ----- 3
+    board_pins[4] = 7; // Servo S4 - X ------ 7
+    board_pins[5] = 4; // Servo S5 - X ----- 4
+    board_pins[6] = 6; // Servo S6 - Z ----- 6
+    board_pins[7] = 5; // Servo S7 - Z ----- 5
 
     // Trim values for zero position calibration.
     // Error value for every servo.
     // Trim Error = Real turning - Angle given
     trim[0] = -65;
     trim[1] = 45;
-    trim[2] = -22;
-    trim[3] = 5;
+    trim[2] = -55;
+    trim[3] = -60; // Changed
     trim[4] = 35;
     trim[5] = -60;
     trim[6] = 0;
-    trim[7] = -30;
-
+    trim[7] = -60;
     // Set reverse movement to false -  forward setting
     for (int i=0; i<8; i++) reverse[i] = false;
 
@@ -36,7 +35,7 @@ void MiniKame::init(){
     zero();
 }
 
-void MiniKame::turnR(float steps, int T=600){
+void Robot::turnR(float steps, int T=600){
     // Adjust for Right ----------------
     int x_amp = 15;
     int z_amp = 35;
@@ -51,7 +50,7 @@ void MiniKame::turnR(float steps, int T=600){
     execute(steps, period, amplitude, offset, phase);
 }
 
-void MiniKame::turnL(float steps, int T=600){
+void Robot::turnL(float steps, int T=600){
     // Adjust for Right ----------------
     int x_amp = 15;
     int z_amp = 15;
@@ -66,32 +65,32 @@ void MiniKame::turnL(float steps, int T=600){
     execute(steps, period, amplitude, offset, phase);
 }
 
-void MiniKame::dance(float steps, int T=600){
+void Robot::dance(float steps, int T=600){
     // Pass
 }
 
-void MiniKame::frontBack(float steps, int T=600){
+void Robot::frontBack(float steps, int T=600){
     // Pass
 }
 
-void MiniKame::run(float steps, int T=5000){
+void Robot::run(float steps, int T=5000){
     // Pass
 }
 
-void MiniKame::omniWalk(float steps, int T, bool side, float turn_factor){
+void Robot::omniWalk(float steps, int T, bool side, float turn_factor){
     // Pass
 }
 
-void MiniKame::moonwalkL(float steps, int T=5000){
+void Robot::moonwalkL(float steps, int T=5000){
     // Pass
 }
 
-void MiniKame::walk(float steps, int T=5000){
+void Robot::walk(float steps, int T=5000){
     // Adjust for Right ----------------
     int x_amp = 15;
     int z_amp = 20;
     int ap = 20;
-    int hi = 30;
+    int hi = -5;
     int front_x = 12;
     // ---------------------------------
 
@@ -141,24 +140,24 @@ void MiniKame::walk(float steps, int T=5000){
     }
 }
 
-void MiniKame::upDown(float steps, int T=5000){
+void Robot::upDown(float steps, int T=5000){
     // Pass
 }
 
 
-void MiniKame::pushUp(float steps, int T=600){
+void Robot::pushUp(float steps, int T=600){
     // Pass
 }
 
-void MiniKame::hello(){
+void Robot::hello(){
     // Pass
 }
 
-void MiniKame::jump(){
+void Robot::jump(){
     // Pass
 }
 
-void MiniKame::home(){
+void Robot::home(){
     int ap = 20;
     int hi = 35;
     int position[] = {90+ap,90-ap,90-hi,90+hi,90-ap,90+ap,90+hi,90-hi};
@@ -166,12 +165,12 @@ void MiniKame::home(){
 }
 
 // Initial position
-void MiniKame::zero(){
+void Robot::zero(){
     for (int i=0; i<8; i++) setServo(i, 90);
 }
 
 // Change value of reverse array
-void MiniKame::reverseServo(int id){
+void Robot::reverseServo(int id){
     if (reverse[id])
         reverse[id] = 0;
     else
@@ -180,22 +179,27 @@ void MiniKame::reverseServo(int id){
 
 
 // Sets an angle to a Servo
-void MiniKame::setServo(int id, float target){
+void Robot::setServo(int id, float target){
     if (!reverse[id])
         // If servo is set to be turned in forward,
         // Go (angle+error)
+//        if (id == 3){
+//          servo[id].write(target+trim[id]);
+//        }else{
+//          
+//        }
         servo[id].write(target+trim[id]);
     else
         servo[id].write(180-(target+trim[id]));
     _servo_position[id] = target;
 }
 
-float MiniKame::getServo(int id){
+float Robot::getServo(int id){
     return _servo_position[id];
 }
 
 
-void MiniKame::moveServos(int time, float target[8]) {
+void Robot::moveServos(int time, float target[8]) {
     if (time>10){
         for (int i = 0; i < 8; i++)	_increment[i] = (target[i] - _servo_position[i]) / (time / 10.0);
         _final_time =  millis() + time;
@@ -212,7 +216,7 @@ void MiniKame::moveServos(int time, float target[8]) {
     for (int i = 0; i < 8; i++) _servo_position[i] = target[i];
 }
 
-void MiniKame::execute(float steps, int period[8], int amplitude[8], int offset[8], int phase[8]){
+void Robot::execute(float steps, int period[8], int amplitude[8], int offset[8], int phase[8]){
 
     for (int i=0; i<8; i++){
         oscillator[i].setPeriod(period[i]);
@@ -234,6 +238,6 @@ void MiniKame::execute(float steps, int period[8], int amplitude[8], int offset[
     }
 }
 
-int MiniKame::angToUsec(float value){
+int Robot::angToUsec(float value){
     return value/180 * (MAX_PULSE_WIDTH-MIN_PULSE_WIDTH) + MIN_PULSE_WIDTH;
 }

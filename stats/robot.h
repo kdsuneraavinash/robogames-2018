@@ -1,10 +1,10 @@
-#ifndef minikame_h
-#define minikame_h
+#ifndef robot_h
+#define robot_h
 
 #include <Servo.h>
 #include <Octosnake.h>
 
-class MiniKame{
+class Robot{
 public:
     void init();
     void run(float steps, int period);
