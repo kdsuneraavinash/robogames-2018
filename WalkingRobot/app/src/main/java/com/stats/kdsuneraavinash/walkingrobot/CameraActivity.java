@@ -243,6 +243,13 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                     }
                 });
 
+        findViewById(R.id.buttonStop).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendArduinoString(commandWords.get(RobotCommand.STOP));
+            }
+        });
+
         arduino = new Arduino(this);
     }
 

@@ -77,6 +77,18 @@
         opencv:layout_constraintTop_toBottomOf="@+id/buttonDirectionOverride" />
 
     <Button
+        android:id="@+id/buttonStop"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="8dp"
+        android:background="@android:color/white"
+        android:padding="8dp"
+        android:text="Stop"
+        opencv:layout_constraintEnd_toEndOf="parent"
+        opencv:layout_constraintTop_toBottomOf="@+id/buttonIdentifyOverride" />
+
+    <Button
         android:id="@+id/buttonSettings"
         android:layout_width="120dp"
         android:layout_height="wrap_content"

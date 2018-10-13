@@ -19,9 +19,9 @@ class ArrowRecognition {
     // Setting - Min Radius
     private static final int minRadius = 200;
     // Setting - Max Radius
-    private static final int maxRadius = 400;
+    private static final int maxRadius = 500;
     // Setting - Max Error
-    private static final int maxError = 40;
+    private static final int maxError = 80;
 
     private static final Scalar MAT_YELLOW = new Scalar(255, 234, 0);
     private static final Scalar MAT_RED = new Scalar(198, 40, 40);
