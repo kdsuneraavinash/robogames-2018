@@ -10,7 +10,7 @@ char input;
 void setup() {
   Serial.begin(9600);
   robot.init();
-  input = 5;
+  input = 9;
 }
 
 void loop() {
@@ -31,7 +31,7 @@ void parseData(char data) {
 
     case 1: // Up
       Serial.println("Up");
-      robot.walk(1, 1000);
+      robot.walk(1, 900);
       break;
 
     case 2: // Down

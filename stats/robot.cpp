@@ -15,13 +15,13 @@ void Robot::init(){
     // Trim values for zero position calibration.
     // Error value for every servo.
     // Trim Error = Real turning - Angle given
-    trim[0] = -65;
-    trim[1] = 45;
+    trim[0] = -40;
+    trim[1] = -10;
     trim[2] = -55;
     trim[3] = -60; // Changed
     trim[4] = 35;
-    trim[5] = -60;
-    trim[6] = 0;
+    trim[5] = -55;
+    trim[6] = -65;
     trim[7] = -60;
     // Set reverse movement to false -  forward setting
     for (int i=0; i<8; i++) reverse[i] = false;
