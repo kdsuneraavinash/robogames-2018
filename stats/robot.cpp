@@ -4,7 +4,7 @@
 void Robot::init(){
     // Map between servos and board pins
     board_pins[0] = 9; // Servo S0 - X ---- 9
-    board_pins[1] = 11; // Servo S1 - X ---- 2
+    board_pins[1] = 2; // Servo S1 - X ---- 2
     board_pins[2] = 8; // Servo S2 - Z ----- 8
     board_pins[3] = 3; // Servo S3 - Z ----- 3
     board_pins[4] = 7; // Servo S4 - X ------ 7
@@ -145,16 +145,24 @@ void Robot::upDown(float steps, int T=5000){
 }
 
 
-void Robot::pushUp(float steps, int T=600){
-    // Pass
-}
-
 void Robot::hello(){
     // Pass
 }
 
 void Robot::jump(){
     // Pass
+}
+
+void Robot::pushUp(float steps, int T=600){
+    int z_amp = 40;
+    int x_amp = 65;
+    int hi = 30;
+    int period[] = {T, T, T, T, T, T, T, T};
+    int amplitude[] = {0,0,z_amp,z_amp,0,0,0,0};
+    int offset[] = {90,90,90-hi,90+hi,90-x_amp,90+x_amp,90+hi,90-hi};
+    int phase[] = {0,0,0,180,0,0,0,180};
+
+    execute(steps, period, amplitude, offset, phase);
 }
 
 void Robot::home(){
