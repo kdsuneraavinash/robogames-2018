@@ -31,7 +31,7 @@ void parseData(char data) {
 
     case 1: // Up
       Serial.println("Up");
-      robot.walk(1, 900);
+      robot.walk(1, 500);
       break;
 
     case 2: // Down
@@ -42,13 +42,13 @@ void parseData(char data) {
     case 3: // Left
       Serial.println("Left");
       robot.turnL(1, 550);
-      input = 5;
+      //input = 5;
       break;
 
     case 4: // Right
       Serial.println("Right");
       robot.turnR(1, 550);
-      input = 5;
+      //input = 5;
       break;
 
     case 5: // STOP
@@ -58,7 +58,9 @@ void parseData(char data) {
       break;
     case 6://push up
       Serial.println("push up");
-      robot.pushUp(1,550);
+      robot.walk(3, 550);
+      robot.turnR(1, 550);
+      //robot.pushUp(1,550);
 
     default:
       break;

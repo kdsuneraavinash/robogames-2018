@@ -15,12 +15,12 @@ void Robot::init(){
     // Trim values for zero position calibration.
     // Error value for every servo.
     // Trim Error = Real turning - Angle given
-    trim[0] = -40;
+    trim[0] = -50;
     trim[1] = -10;
     trim[2] = -55;
     trim[3] = -60; // Changed
-    trim[4] = 35;
-    trim[5] = -55;
+    trim[4] = 20;
+    trim[5] = -40;
     trim[6] = -65;
     trim[7] = -60;
     // Set reverse movement to false -  forward setting
@@ -100,8 +100,8 @@ void Robot::walk(float steps, int T=5000){
                                 90-ap+front_x,
                                 90-hi,
                                 90+hi,
-                                90-ap-front_x,
-                                90+ap+front_x,
+                                90-ap-front_x+30,
+                                90+ap+front_x-30,
                                 90+hi,
                                 90-hi
                     };
