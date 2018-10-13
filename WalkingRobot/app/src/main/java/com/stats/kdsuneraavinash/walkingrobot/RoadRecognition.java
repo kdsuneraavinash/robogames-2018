@@ -30,7 +30,7 @@ class RoadRecognition {
     // Setting - Roads which are thinner than this will be neglected
     private double smallRoadFilter = 600.0;
     // Setting - Forward will flip to Right or Left after this much deviation
-    private int centerMaxDeviation = 100;
+    private int centerMaxDeviation = 200;
 
     private double deviation = 0;
     private boolean canBeCircle = false;
@@ -147,9 +147,9 @@ class RoadRecognition {
         deviation = getMidPoint(colorImage);
         String command;
         if (deviation < -centerMaxDeviation) {
-            command = "LEFT: " + Math.round(-deviation * 200 / colorImage.width()) + " %";
+            command = "LEFT: " + Math.abs(Math.round(deviation));
         } else if (deviation > centerMaxDeviation) {
-            command = "RIGHT: " + Math.round(deviation * 200 / colorImage.width()) + " %";
+            command = "RIGHT: " +  Math.abs(Math.round(deviation));
         } else {
             command = "FORWARD";
         }

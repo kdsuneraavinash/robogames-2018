@@ -17,7 +17,7 @@ import java.util.List;
 
 class ArrowRecognition {
     // Setting - Min Radius
-    private static final int minRadius = 200;
+    private static final int minRadius = 100;
     // Setting - Max Radius
     private static final int maxRadius = 500;
     // Setting - Max Error
@@ -210,11 +210,29 @@ class ArrowRecognition {
 
         if (c.y < r.y) {
             if (c.x < r.x) {
+                // 4 circle
                 angle = -180 + angle;
             } else {
+
+                // 3 circle
                 angle = 180 + angle;
             }
         }
+
+        if (c.y > r.y){
+            if (c.x > r.x){
+                angle=90-angle;
+            }else{
+                angle=90-angle;
+            }
+        }else{
+            if (c.x > r.x){
+                angle=90-angle;
+            }else{
+                angle=270+ angle;
+            }
+        }
+
 
         Imgproc.circle(regionOfInterest, p, 2, MAT_YELLOW, 3);
         Imgproc.circle(regionOfInterest, q, 2, MAT_YELLOW, 3);
@@ -225,7 +243,7 @@ class ArrowRecognition {
         if (angle>20){
             angleText = "ANGLE: COUNTER CLOCKWISE " + angle;
         }else if(angle<20){
-            angleText = "ANGLE: CLOCKWISE " + (-angle);
+            angleText = "ANGLE: CLOCKWISE " + angle;
         }else{
             angleText = "ANGLE: FORWARD";
         }

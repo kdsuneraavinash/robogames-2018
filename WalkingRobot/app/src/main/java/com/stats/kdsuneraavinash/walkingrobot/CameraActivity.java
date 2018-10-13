@@ -6,7 +6,9 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.RequiresApi;
 import android.text.InputType;
 import android.view.SurfaceView;
 import android.view.View;
@@ -22,6 +24,8 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 
 import me.aflak.arduino.Arduino;
@@ -48,9 +52,12 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private Button buttonDirectionOverride;
     private Button buttonFollowRoad;
 
+    private boolean isWaiting = false;
+    private LocalTime waitStartTIme = null;
+
     // Setting - Sleep duration (milliseconds)
     @SuppressWarnings("FieldCanBeLocal")
-    private int waitDuration = 100;
+    private int waitDuration = 1200;
 
     EditText dialogInput;
 
@@ -93,13 +100,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             @Override
             public void onArduinoMessage(final byte[] bytes) {
                 textStatus.setBackgroundColor(Color.GREEN);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        textReceived.setText(new String(bytes));
-                    }
-                });
-
             }
 
             @Override
@@ -271,13 +271,12 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     }
 
     private void sendArduinoString(final String message) {
-        System.out.println("Sent: " + message);
-        arduino.send((message).getBytes());
         this.runOnUiThread(new Runnable() {
             public void run() {
                 textStatus.setText(String.format("Sent: %s", message));
             }
         });
+        arduino.send((message).getBytes());
     }
 
     private void showInputDialogBox(String title, String defaultText, DialogInterface.OnClickListener listener) {
@@ -339,6 +338,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     public void onCameraViewStopped() {
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame)  {
         Mat screen;
@@ -352,20 +352,25 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
                 mode = IdentifyMode.JUNCTION;
                 sendArduinoString(commandWords.get(RobotCommand.CIRCLE));
             }else{
-                RobotCommand command;
+                String command;
                 double deviation = roadRecognizer.getMidPointDeviation();
                 if (deviation > roadRecognizer.getCenterMaxDeviation()) {
-                    command = RobotCommand.RIGHT;
+                    command = commandWords.get(RobotCommand.RIGHT);
                 } else if (deviation < -roadRecognizer.getCenterMaxDeviation()) {
-                    command = RobotCommand.LEFT;
+                    command = commandWords.get(RobotCommand.LEFT);
                 } else {
-                    command = RobotCommand.FORWARD;
+                    command = commandWords.get(RobotCommand.FORWARD);
                 }
-                sendArduinoString(commandWords.get(command));
-                try {
-                    Thread.sleep(waitDuration);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                if (!isWaiting || (ChronoUnit.MILLIS.between(waitStartTIme, LocalTime.now())>waitDuration)){
+                    sendArduinoString(command);
+                    isWaiting = true;
+                    waitStartTIme = LocalTime.now();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            textReceived.setText(waitStartTIme.toString());
+                        }
+                    });
                 }
             }
         } else {
