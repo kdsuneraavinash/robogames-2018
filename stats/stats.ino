@@ -31,7 +31,7 @@ void parseData(char data) {
 
     case 1: // Up
       Serial.println("Up");
-      robot.walk(1, 500);
+      robot.walk(1, 1000);
       break;
 
     case 2: // Down

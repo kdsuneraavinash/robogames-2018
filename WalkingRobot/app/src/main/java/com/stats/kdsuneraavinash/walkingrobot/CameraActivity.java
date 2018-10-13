@@ -32,7 +32,7 @@ enum IdentifyMode {
 }
 
 enum RobotCommand {
-    FORWARD, STOP, LEFT, RIGHT, NONE
+    FORWARD, STOP, LEFT, RIGHT, NONE, CIRCLE
 }
 
 public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -116,6 +116,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         commandWords.put(RobotCommand.RIGHT, "4");
         commandWords.put(RobotCommand.STOP, "5");
         commandWords.put(RobotCommand.NONE, "5");
+        commandWords.put(RobotCommand.CIRCLE, "6");
     }
 
     @Override
@@ -331,6 +332,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             screen = roadRecognizer.process(inputFrame.rgba());
             if (roadRecognizer.isCanBeCircle()){
                 mode = IdentifyMode.JUNCTION;
+                sendArduinoString(commandWords.get(RobotCommand.CIRCLE));
             }else{
                 RobotCommand command;
                 double deviation = roadRecognizer.getMidPointDeviation();

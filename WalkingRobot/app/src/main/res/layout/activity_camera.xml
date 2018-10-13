@@ -16,70 +16,75 @@
 
     <TextView
         android:id="@+id/textIndicator"
-        android:layout_width="wrap_content"
+        android:layout_width="120dp"
         android:layout_height="42dp"
         android:layout_marginEnd="8dp"
         android:layout_marginTop="8dp"
         android:padding="8dp"
-        android:text="Indicator"
+        android:text="@string/indicator"
         android:textSize="18sp"
         opencv:layout_constraintEnd_toEndOf="parent"
         opencv:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/textReceived"
-        android:layout_width="wrap_content"
-        android:layout_height="53dp"
+        android:layout_width="120dp"
+        android:layout_height="44dp"
         android:layout_marginBottom="4dp"
         android:layout_marginEnd="4dp"
+        android:background="@android:color/white"
         android:padding="8dp"
-        android:text="Nothing"
+        android:text="@string/nothing"
+        android:textColor="@android:color/black"
         android:textSize="18sp"
         opencv:layout_constraintBottom_toBottomOf="parent"
         opencv:layout_constraintEnd_toEndOf="parent" />
 
     <Button
         android:id="@+id/buttonDirectionOverride"
-        android:layout_width="wrap_content"
+        android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:layout_marginTop="8dp"
+        android:background="@android:color/white"
         android:padding="8dp"
-        android:text="Override Directions"
+        android:text="@string/send_signal"
         opencv:layout_constraintEnd_toEndOf="parent"
         opencv:layout_constraintTop_toBottomOf="@+id/buttonSettings" />
 
     <Button
         android:id="@+id/buttonIdentifyOverride"
-        android:layout_width="wrap_content"
+        android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:layout_marginTop="8dp"
+        android:background="@android:color/white"
         android:padding="8dp"
-        android:text="Override Identifying"
+        android:text="@string/change_mode"
         opencv:layout_constraintEnd_toEndOf="parent"
         opencv:layout_constraintTop_toBottomOf="@+id/buttonFollowRoad" />
 
     <Button
         android:id="@+id/buttonFollowRoad"
-        android:layout_width="wrap_content"
+        android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:layout_marginTop="8dp"
+        android:background="@android:color/white"
         android:padding="8dp"
-        android:text="Follow Road Mode"
+        android:text="@string/auto_mode"
         opencv:layout_constraintEnd_toEndOf="parent"
         opencv:layout_constraintTop_toBottomOf="@+id/buttonDirectionOverride" />
 
     <Button
         android:id="@+id/buttonSettings"
-        android:layout_width="45dp"
-        android:layout_height="38dp"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:layout_marginTop="8dp"
         android:background="@android:color/white"
         android:padding="8dp"
-        android:text="#"
+        android:text="@string/settings"
         opencv:layout_constraintEnd_toEndOf="parent"
         opencv:layout_constraintTop_toBottomOf="@+id/textIndicator" />
 

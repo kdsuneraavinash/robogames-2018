@@ -154,7 +154,7 @@ class RoadRecognition {
             command = "FORWARD";
         }
         Imgproc.putText(colorImage, command, new Point(100, 100), Core.FONT_HERSHEY_COMPLEX, 2, MAT_YELLOW, 4);
-        Imgproc.putText(colorImage, "DETECTED ROADS=: " + numberOfDetectedRoads, new Point(100, 150),
+        Imgproc.putText(colorImage, "DETECTED ROADS: " + numberOfDetectedRoads, new Point(100, 150),
                 Core.FONT_HERSHEY_COMPLEX, 1, MAT_L_GREEN);
         Imgproc.putText(colorImage, "MAX W ROAD: " + maxWidthOfRoads, new Point(100, 200),
                 Core.FONT_HERSHEY_COMPLEX, 1, MAT_L_GREEN);
