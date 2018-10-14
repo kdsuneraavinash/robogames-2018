@@ -48,7 +48,7 @@ void Robot::init(){
 void Robot::turnR(float steps, int T=600){
     // Adjust for Right ----------------
     int x_amp = 13;
-    int z_amp = 10;
+    int z_amp = 25;
     int ap = 15;
     int hi = 15;
     // ---------------------------------
@@ -63,7 +63,7 @@ void Robot::turnR(float steps, int T=600){
 void Robot::turnL(float steps, int T=600){
     // Adjust for Right ----------------
     int x_amp = 13;
-    int z_amp = 10;
+    int z_amp = 25;
     int ap = 15;
     int hi = 15;
     // ---------------------------------
@@ -98,7 +98,7 @@ void Robot::moonwalkL(float steps, int T=5000){
 void Robot::walk(float steps, int T=5000){
     // Adjust for Right ----------------
     int x_amp = 10;
-    int z_amp = 23;
+    int z_amp = 25;
     int ap = 20;
     int hi = -5;
     int front_x = 12;

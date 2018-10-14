@@ -31,7 +31,7 @@ void loop() {
     inp -= '0';
     if (!isValidNumber(inp)) {
       continue;
-    } else if (inp == 8) {
+    } else if (inp == 6) {
       angle = 0;
       delay(10);
       dir = Serial.read() - '0';
@@ -49,88 +49,98 @@ void loop() {
       } else if (angle > 45) {
         angle = 90;
       }
-      Serial.print("Angle : ");
-      Serial.println(angle);
-      Serial.print("Dir : ");
-      Serial.println(dir);
-      //return;
+      //Serial.print("Angle : ");
+      //Serial.println(angle);
+      //Serial.print("Dir : ");
+      //Serial.println(dir);
+      input = inp;
+      break;
     } else {
       input = inp;
       //Serial.println(input);
       delay(10);
     }
   }
-  //  if (input == 9) {
-  //    return;
-  //  }
-  //  if (input != 8) {
-  //    Serial.println("A");
-  //    parseData(input, 0);
-  //  } else {
-  //    //Serial.println("B");
-  //    if (dir == 0) {
-  //      parseData(10, angle);
-  //    } else if (dir == 1) {
-  //      parseData(11, angle);
-  //    }
-  parseData(input, 0);
+  //Serial.println('a');
+  if (input == 9) {
+    return;
+  }
+  else if (input == 6) {
+    //Serial.println("B");
+    if (dir == 0) {
+      parseData(10, angle);
+    } else {
+      parseData(11, angle);
+    }
+  } else {
+    //Serial.println("A");
+    parseData(input, 0);
+  }
 }
 
 void parseData(char data, int angle) {
   switch (data) {
 
     case 1: // Up
-      Serial.println("Up");
+      //Serial.println("Up");
       robot.walk(1, 800);
       input = 9;
       break;
 
     case 3: // Left
-      Serial.println("Left");
+      //Serial.println("Left");
       robot.turnL(1, 1000);
       //robot.walk(1, 1000);
-      robot.zero();
+      //robot.zero();
       input = 9;
       break;
 
     case 4: // Right
-      Serial.println("Right");
+      //Serial.println("Right");
       robot.turnR(1, 1000);
       //robot.walk(2, 1000);
-      robot.zero();
+      //robot.zero();
       input = 9;
       break;
 
     case 5: // STOP
       robot.zero();
-      Serial.println("Stop");
+      //Serial.println("Stop");
       input = 9;
       break;
 
     case 8://push up
-      Serial.println("push up");
+      //Serial.println("push up");
       //robot.pushUp(2, period);
       robot.walk(6, 1500);
-      Serial.println(angle);
+      //Serial.println(angle);
       robot.turnR(angle, 1000);
-      Serial.println("finish");
+      //Serial.println("finish");
       input = 9;
       break;
     case 10:
       Serial.println("clockwise");
-      robot.walk(6, 1500);
-      robot.turnR(angle / 5, 1000);
-      Serial.println("finish clockwise");
+      robot.walk(5, 1200);
+      robot.turnR(7, 800);
+      robot.walk(2, 800);
+      sendDone();
       input = 9;
       break;
     case 11:
       Serial.println("antiClock");
-      robot.walk(6, 1500);
-      robot.turnL(angle / 5, 1000);
-      Serial.println("finish anticlockwise");
+      robot.walk(5, 1200);
+      robot.turnL(7, 800);
+      robot.walk(2, 800);
+      sendDone();
       input = 9;
       break;
     default:
       break;
+  }
+}
+
+void sendDone(){
+  for(int i = 0; i<1; i++){
+    Serial.print("z");
   }
 }
