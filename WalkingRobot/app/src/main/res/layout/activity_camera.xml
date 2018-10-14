@@ -40,6 +40,20 @@
         opencv:layout_constraintBottom_toBottomOf="parent"
         opencv:layout_constraintEnd_toEndOf="parent" />
 
+
+    <TextView
+        android:id="@+id/textMessage"
+        android:layout_width="116dp"
+        android:layout_height="44dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@android:color/white"
+        android:padding="8dp"
+        android:text="@string/nothing"
+        android:textColor="@android:color/black"
+        android:textSize="18sp"
+        opencv:layout_constraintBottom_toTopOf="@+id/textReceived"
+        opencv:layout_constraintEnd_toEndOf="parent" />
     <Button
         android:id="@+id/buttonDirectionOverride"
         android:layout_width="120dp"

@@ -27,6 +27,12 @@ class ArrowRecognition {
     private static final Scalar MAT_RED = new Scalar(198, 40, 40);
     private static final Scalar MAT_L_BLUE = new Scalar(3, 169, 244);
 
+    private double angle;
+
+    double getAngle() {
+        return angle;
+    }
+
     private Mat preprocessor(Mat colorImage) {
         // Grey-scale image
         Mat monoImage = new Mat();
@@ -201,7 +207,6 @@ class ArrowRecognition {
         double cy = (p.y + q.y) / 2;
         Point c = new Point(cx, cy);
 
-        double angle;
         if (c.y == r.y) {
             angle = -90.0;
         } else {

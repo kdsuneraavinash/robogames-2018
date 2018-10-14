@@ -53,6 +53,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private Button buttonFollowRoad;
 
     private boolean isWaiting = false;
+    private boolean waitingForDoneSignal = false;
     private LocalTime waitStartTIme = null;
 
     // Setting - Sleep duration (milliseconds)
@@ -99,7 +100,26 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
             @Override
             public void onArduinoMessage(final byte[] bytes) {
+                final String rec = new String(bytes);
                 textStatus.setBackgroundColor(Color.GREEN);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        ((TextView) findViewById(R.id.textMessage)).setText(rec);
+                    }
+                });
+
+                if (rec.contains("z")){
+                    waitingForDoneSignal = false;
+                    isWaiting = false;
+                    mode = IdentifyMode.FOLLOW_ROAD;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            findViewById(R.id.textMessage).setBackgroundColor(Color.GREEN);
+                        }
+                    });
+                }
             }
 
             @Override
@@ -346,11 +366,18 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             screen = roadRecognizer.process(inputFrame.rgba());
         } else if (mode == IdentifyMode.JUNCTION) {
             screen = arrowRecognizer.process(inputFrame.rgba());
+            if (!waitingForDoneSignal){
+                int angle = (int) arrowRecognizer.getAngle();
+                int dir = angle>0 ? 0:1;
+                angle = Math.abs(angle);
+                sendArduinoString(commandWords.get(RobotCommand.CIRCLE) + dir + "" + angle);
+            }
+
+
         } else if (mode == IdentifyMode.FOLLOW_ROAD) {
             screen = roadRecognizer.process(inputFrame.rgba());
             if (roadRecognizer.isCanBeCircle()){
                 mode = IdentifyMode.JUNCTION;
-                sendArduinoString(commandWords.get(RobotCommand.CIRCLE));
             }else{
                 String command;
                 double deviation = roadRecognizer.getMidPointDeviation();
